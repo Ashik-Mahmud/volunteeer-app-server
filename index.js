@@ -163,12 +163,19 @@ async function run(){
         app.get("/blog",VerifyToken,  async(req, res) =>{
             const userId = req.query.uid;
             const userDecodedId = req.decoded.uid;
-            const query = req.query;
+            const query = req.query.uid;
+            const page = Number(req.query.page)
+            const limit = Number(req.query.limit)
+            
             
             if(userDecodedId === userId){
-                const cursor = await blogsCollection.find(query);
-                const result = await cursor.toArray();
-                res.send(result)
+                const count = await blogsCollection.estimatedDocumentCount();
+                if(limit > count){
+                    return res.send({limit: 'none'})
+                }
+                const cursor = await blogsCollection.find({uid: query});
+                const result = await cursor.skip(limit * page).limit(limit).toArray();
+                res.send({result, count})
             }else{
                 res.status(403).send({message: "Forbidden Request"})
             } 
@@ -225,6 +232,46 @@ async function run(){
            
        })
 
+
+       /* SEND DATA FOR USER INTO MONGODB */
+       const usersCollection = client.db("users-db").collection("users")
+       app.post("/create-user", async(req, res)=>{
+           const userInfo = req.body;
+           const result = await usersCollection.insertOne(userInfo)
+           if(result.acknowledged){
+               res.send({message: "user created successfully done."})
+           }
+       })
+
+
+       app.get("/users", VerifyToken,  async(req, res)=>{
+           const authVerify = req.decoded.uid;
+           const userId = req.query.uid;
+           if(userId === authVerify){
+            const cursor = await usersCollection.find({});
+            const result = await cursor.toArray();
+            res.send(result)
+           }else{
+            res.status(403).send({message: "Forbidden Request"})
+           }
+       })
+
+       /* DELETE USER FROM DATABASE  */
+       app.delete("/user",VerifyToken, async(req, res) =>{
+           const userId = req.query.id;
+           const uid = req.query.uid;
+           const decodedId = req.decoded.uid;
+           if(decodedId === uid){
+               const filter = {_id: ObjectId(userId)};
+               const result = await usersCollection.deleteOne(filter);
+               if(result.acknowledged){
+                   res.send({message: "User deleted successfully done."})
+               }
+           }else{
+             res.status(403).send({message: "Forbidden Request"})
+           }
+
+       })
 
 
         /* GET DATA FOR AUTHORIZATION */
