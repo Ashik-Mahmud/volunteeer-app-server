@@ -170,10 +170,11 @@ async function run(){
             
             if(userDecodedId === userId){
                 const count = await blogsCollection.estimatedDocumentCount();
+                
                 if(limit > count){
                     return res.send({limit: 'none'})
                 }
-                const cursor = await blogsCollection.find({uid: query});
+                const cursor = await blogsCollection.find({uid: query});               
                 const result = await cursor.skip(limit * page).limit(limit).toArray();
                 res.send({result, count})
             }else{
