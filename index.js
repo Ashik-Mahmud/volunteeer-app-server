@@ -275,6 +275,18 @@ async function run(){
        })
 
 
+       /* COUNT BLOG VIEWS  */
+       app.patch("/views", async(req, res) => {
+           const id = req.query.id;
+           console.log(id);
+           const result = await blogsCollection.updateOne({_id: ObjectId(id)}, {$inc: {views: 1}})
+           if(result.acknowledged){
+               res.send({message: "You got views"})
+           }
+           
+           
+       })
+
         /* GET DATA FOR AUTHORIZATION */
         app.post("/login", async(req, res) => {
             const userInfo = req.body;
